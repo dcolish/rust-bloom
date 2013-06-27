@@ -1,5 +1,10 @@
+// TODO:dc: test against reference implementation.
+// TODO:dc: comments and usage
+
+
 use std::option::{None};
 use std::to_bytes::{ToBytes};
+use std::iterator::{Counter};
 use std::uint;
 
 
@@ -17,9 +22,50 @@ macro_rules! murmur32(
 fn main() {
     let s = "Hello";
     let m = murmur32!(s);
+
+    let mut f:u32 = 111;
+    f += (108 & 0xff) << 8;
+
+    println(f.to_str());
     println(m.to_str());
 }
 
+
+fn chunk(data: &[u8], offset:uint, size: uint) -> u32 {
+    Counter::new(0u, 1u)
+        .take_while(|&a| a < size)
+        .fold(0, |c:u32, i:uint| {
+            let m = c + ((data[offset + i] & 0xff) as u32 << (i * 8));
+            debug!("i=%?, c=%?", i, m);
+            m
+        })
+}
+
+
+#[test]
+fn testchunk() {
+
+    let data:~[u8] = "Hello".to_bytes(false);
+
+    let i = 0;
+
+    let k: u32 = chunk(data, i, 4);
+    let mut r: u32 = 0;
+
+    r += ((data[i + 0] & 0xff) as u32 << 0);
+    debug!("r=%s", r.to_str());
+    r += ((data[i + 1] & 0xff) as u32 << 8);
+    debug!("r=%s", r.to_str());
+    r += ((data[i + 2] & 0xff) as u32 << 16);
+    debug!("r=%s", r.to_str());
+    r += ((data[i + 3] & 0xff) as u32 << 24);
+    debug!("r=%s", r.to_str());
+
+    debug!("k=%?, r=%?", k, r);
+
+    assert!( k == r);
+
+}
 
 fn murmur32 <T : ToBytes>(input: &T, l: &Option<uint>, s: &Option<uint>) -> u32 {
     
@@ -42,11 +88,8 @@ fn murmur32 <T : ToBytes>(input: &T, l: &Option<uint>, s: &Option<uint>) -> u32 
         let i4 : uint = i*4;
 
         // Build a 4 byte chunk
-        let mut k: u32 = (data[i4 + 0] & 0xff) as u32;
-        k += ((data[i4 + 1] & 0xff) << 8) as u32;
-        k += ((data[i4 + 2] & 0xff) << 16) as u32;
-        k += ((data[i4 + 3] & 0xff) << 24) as u32;
-            
+        let mut k: u32 = chunk(data, i4, 4);
+
         k *= c1;
         k = (k << r1) | (k >> (32 - r1));
         k *= c2;
@@ -63,8 +106,8 @@ fn murmur32 <T : ToBytes>(input: &T, l: &Option<uint>, s: &Option<uint>) -> u32 
     
     while rem != 0  {
         remaining += match rem {
-            3 => { ((data[length - 3] & 0xff) << 16) as u32 },
-            2 => { ((data[length - 2] & 0xff) << 8) as u32 },
+            3 => { ((data[length - 3] & 0xff) as u32 << 16) },
+            2 => { ((data[length - 2] & 0xff) as u32 << 8) },
             1 => { (data[length - 1] & 0xff) as u32 },
             _ => { 0 }
         }; 
