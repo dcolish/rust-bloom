@@ -67,7 +67,8 @@ fn testchunk() {
 
 }
 
-fn murmur32 <T : ToBytes>(input: &T, l: &Option<uint>, s: &Option<uint>) -> u32 {
+
+pub fn murmur32 <T : ToBytes>(input: &T, l: &Option<uint>, s: &Option<uint>) -> u32 {
     
     let data: ~[u8] = input.to_bytes(false);
     let length: uint = l.get_or_default(data.len());
@@ -99,7 +100,6 @@ fn murmur32 <T : ToBytes>(input: &T, l: &Option<uint>, s: &Option<uint>) -> u32 
         h = (h * m) + n
             
     }
-    
 
     let mut remaining: u32 = 0;
     let mut rem = length % 4;
@@ -128,4 +128,3 @@ fn murmur32 <T : ToBytes>(input: &T, l: &Option<uint>, s: &Option<uint>) -> u32 
     h *= 0xc2b2ae35;
     h ^ (h >> 16)
 }
-
